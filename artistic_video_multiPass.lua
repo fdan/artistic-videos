@@ -141,15 +141,24 @@ local function main(params)
   
   local usePrev = params.init == 'prev' or params.init == 'prevWarped'
   local needFlow = params.init == 'prevWarped' or params.prevPlusFlow_layers ~= ''
-  
+
+  --for run in range(params.continue_with_pass, params.num_passes):
   for run=params.continue_with_pass, params.num_passes do
 
+    -- 1 if we're in a forward pass, 0 if we're in a backward pass
     local flag = run % 2
+
+    -- start = end_image_idx if flag==0 else parama.start_number
     local start = (flag == 0) and end_image_idx or params.start_number
+
+    -- endp = params.start_number if flag==0 else end_image_idx
     local endp = (flag == 0) and params.start_number or end_image_idx
+
+    -- incr = -1 if flag==0 else 1
     local incr = (flag == 0) and -1 or 1
-  
-    for frameIdx=start,endp, incr do
+
+    --for frameIdx in range(start, end) #incrementing by incr
+    for frameIdx=start, endp, incr do
 
       local content_image_caffe = getContentImage(frameIdx, params)
       local content_losses, prevPlusFlow_losses = {}, {}
@@ -189,8 +198,10 @@ local function main(params)
           if losses_type[i] == 'prevPlusFlowWeighted' then
             local weightsFileName = nil
             if flag == 1 then
+              -- if in a backward->forward pass, get disocclusion mask from this frame - 1 to this frame
               weightsFileName = getFormatedFlowFileName(params.backwardFlow_weight_pattern, frameIdx-1, frameIdx)
             else
+              -- if in a forward->backward pass, get disocclusion mask from this frame + 1 to this frame
               weightsFileName = getFormatedFlowFileName(params.forwardFlow_weight_pattern, frameIdx+1, frameIdx)
             end
             print(string.format('Reading flowWeights file "%s".', weightsFileName))

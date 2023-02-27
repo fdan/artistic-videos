@@ -33,10 +33,11 @@ fi
 
 i=$[$startFrame]
 j=$[$startFrame + $stepSize]
+# j might be less than i?
 
 mkdir -p "${folderName}"
 
-while true; do
+ while true; do
   file1=$(printf "$filePattern" "$i")
   file2=$(printf "$filePattern" "$j")
   if [ -a $file2 ]; then
@@ -46,7 +47,17 @@ while true; do
     if [ ! -f ${folderName}/backward_${j}_${i}.flo ]; then
       eval $flowCommandLine "$file2" "$file1" "${folderName}/backward_${j}_${i}.flo"
     fi
+    # write out for both directions (backward->forward, forward->backward)
+    # note j means something like "temporal prior".
+    # for a backward->forward pass, this is a negative number.
+    # for a forward->backward pass, this is a positive number
+
+    # backward->forward
+    # backwards_1011_1010.flo, forward_1010_1011.flo, disocclusion_1011_1010
+    # prman style: backwards_1011.exr, forward_1010.exr, i.e. fore1010 and back 1011 are a pair
+    # note the same pair is used for the disocclusion mask in both directions
     ./consistencyChecker/consistencyChecker "${folderName}/backward_${j}_${i}.flo" "${folderName}/forward_${i}_${j}.flo" "${folderName}/reliable_${j}_${i}.pgm"
+
     ./consistencyChecker/consistencyChecker "${folderName}/forward_${i}_${j}.flo" "${folderName}/backward_${j}_${i}.flo" "${folderName}/reliable_${i}_${j}.pgm"
   else
     break
